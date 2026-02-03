@@ -1,0 +1,432 @@
+<style>
+        /* --- THEME VARIABLES --- */
+        :root {
+            /* Glass Dark Theme */
+            --glass-bg: rgba(10, 10, 12, 0.65); /* Translucent dark */
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-blur: blur(16px);
+            
+            --accent: #ffffff;
+            --text-main: #ededed;
+            --text-muted: #a1a1aa;
+            
+            /* Success Color for Copy */
+            --success: #4ade80; 
+
+            --font: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --anim-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Bouncy pop */
+            --anim-smooth: cubic-bezier(0.16, 1, 0.3, 1); /* Apple-like slide */
+        }
+
+        body {
+            /* Colorful background just to demonstrate the Glassmorphism effect */
+            background: radial-gradient(circle at 50% 50%, #1a1a2e 0%, #000000 100%);
+            margin: 0;
+            height: 100vh;
+            font-family: var(--font);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* --- WIDGET CONTAINER --- */
+        .ai-widget {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            isolation: isolate;
+        }
+
+        /* --- TOGGLE BUTTON --- */
+        .ai-toggle {
+            width: 60px;
+            height: 60px;
+            background: #0f0f11;
+            border: 1px solid #333;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            transition: all 0.3s var(--anim-spring);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ai-toggle:hover {
+            transform: scale(1.1);
+            border-color: var(--accent);
+            box-shadow: 0 0 20px rgba(255,255,255,0.15);
+        }
+
+        .ai-toggle svg {
+            width: 26px;
+            height: 26px;
+            fill: white;
+            transition: all 0.4s var(--anim-smooth);
+            position: absolute;
+        }
+
+        /* Toggle Icon States */
+        .icon-close { opacity: 0; transform: rotate(-90deg) scale(0.5); }
+        .ai-widget.open .icon-close { opacity: 1; transform: rotate(0) scale(1); }
+        .ai-widget.open .icon-chat { opacity: 0; transform: rotate(90deg) scale(0.5); }
+
+
+        /* --- GLASS CHAT WINDOW --- */
+        .ai-window {
+            position: absolute;
+            bottom: 80px;
+            right: 0;
+            width: 380px;
+            height: 600px;
+            max-height: calc(100vh - 120px);
+            
+            /* THE GLASS EFFECT */
+            background: var(--glass-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+            
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            
+            /* Entry Animation */
+            opacity: 0;
+            transform: translateY(20px) scale(0.9);
+            transform-origin: bottom right;
+            pointer-events: none;
+            transition: opacity 0.3s ease, transform 0.4s var(--anim-smooth);
+        }
+
+        .ai-widget.open .ai-window {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: all;
+        }
+
+        /* --- HEADER --- */
+        .ai-header {
+            padding: 18px 24px;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .ai-header h3 {
+            margin: 0;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-main);
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .ai-header h3::before {
+            content: '';
+            display: block;
+            width: 6px;
+            height: 6px;
+            background: var(--accent);
+            border-radius: 50%;
+            box-shadow: 0 0 10px white;
+        }
+
+        /* --- MESSAGES --- */
+        .ai-messages {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Custom Scrollbar */
+        .ai-messages::-webkit-scrollbar { width: 5px; }
+        .ai-messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+        .ai-messages::-webkit-scrollbar-track { background: transparent; }
+
+        .msg-wrapper {
+            display: flex;
+            flex-direction: column;
+            max-width: 85%;
+            animation: slideIn 0.3s ease forwards;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        
+        @keyframes slideIn { to { opacity: 1; transform: translateY(0); } }
+
+        .msg-wrapper.user { align-self: flex-end; align-items: flex-end; }
+        .msg-wrapper.bot { align-self: flex-start; align-items: flex-start; }
+
+        .msg-bubble {
+            padding: 12px 16px;
+            font-size: 14px;
+            line-height: 1.5;
+            border-radius: 14px;
+            position: relative;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        /* User Bubble */
+        .msg-wrapper.user .msg-bubble {
+            background: var(--accent);
+            color: #000;
+            border-bottom-right-radius: 2px;
+            font-weight: 500;
+        }
+
+        /* Bot Bubble */
+        .msg-wrapper.bot .msg-bubble {
+            background: rgba(255, 255, 255, 0.05); /* Slight translucent grey */
+            color: #e5e5e5;
+            border: 1px solid var(--glass-border);
+            border-bottom-left-radius: 2px;
+        }
+
+        /* --- COPY BUTTON (The Upgrade) --- */
+        .msg-actions {
+            margin-top: 6px;
+            opacity: 0;
+            transform: translateY(-5px);
+            transition: all 0.2s ease;
+        }
+        
+        .msg-wrapper:hover .msg-actions {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .copy-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 6px;
+            padding: 4px 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            color: var(--text-muted);
+            font-size: 11px;
+            font-family: var(--font);
+            transition: all 0.2s;
+        }
+
+        .copy-btn svg { width: 12px; height: 12px; fill: currentColor; }
+
+        .copy-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border-color: rgba(255,255,255,0.2);
+        }
+
+        /* SUCCESS STATE (Green) */
+        .copy-btn.copied {
+            background: rgba(74, 222, 128, 0.15);
+            border-color: var(--success);
+            color: var(--success);
+        }
+
+        /* --- INPUT AREA --- */
+        .ai-input-wrap {
+            padding: 20px;
+            background: rgba(0,0,0,0.2);
+            border-top: 1px solid var(--glass-border);
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .ai-input {
+            flex: 1;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid transparent;
+            border-radius: 10px;
+            padding: 12px 15px;
+            color: white;
+            font-family: var(--font);
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .ai-input:focus {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.15);
+        }
+        .ai-input::placeholder { color: #666; }
+
+        .ai-send {
+            background: var(--accent);
+            border: none;
+            border-radius: 10px;
+            width: 42px;
+            height: 42px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s;
+        }
+        .ai-send:hover { transform: scale(1.05); }
+        .ai-send:active { transform: scale(0.95); }
+        .ai-send svg { width: 20px; height: 20px; fill: #000; margin-left: 2px; }
+
+        /* --- LOADER --- */
+        .typing { display: flex; gap: 4px; padding: 4px; }
+        .dot { width: 4px; height: 4px; background: #888; border-radius: 50%; animation: wave 1.3s infinite ease-in-out; }
+        .dot:nth-child(1) { animation-delay: -0.4s; }
+        .dot:nth-child(2) { animation-delay: -0.2s; }
+        @keyframes wave { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+
+        @media (max-width: 480px) {
+            .ai-window { width: calc(100vw - 40px); height: 70vh; bottom: 100px; right: 20px; }
+            .ai-widget { right: 20px; bottom: 20px; }
+        }
+    </style>
+
+<div class="ai-widget" id="aiWidget">
+        
+        <!-- Chat Window -->
+        <div class="ai-window">
+            <div class="ai-header">
+                <h3>Website Assistant</h3>
+            </div>
+
+            <div class="ai-messages" id="aiMessages">
+                <!-- Welcome -->
+                <div class="msg-wrapper bot">
+                    <div class="msg-bubble">Hello, You can ask me question about buying a website and i will inform vivek about it. How can I help?</div>
+                </div>
+            </div>
+
+            <div class="ai-input-wrap">
+                <input type="text" class="ai-input" id="aiInput" placeholder="Ask something..." autocomplete="off">
+                <button class="ai-send" onclick="handleSend()">
+                    <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Toggle Button -->
+        <button class="ai-toggle" onclick="toggleChat()">
+            <svg class="icon-chat" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+            <svg class="icon-close" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+    </div>
+<script>
+        const API_URL = "https://ezif.workers.dev";
+        const widget = document.getElementById('aiWidget');
+        const messages = document.getElementById('aiMessages');
+        const input = document.getElementById('aiInput');
+
+        let isOpen = false;
+
+        function toggleChat() {
+            isOpen = !isOpen;
+            widget.classList.toggle('open', isOpen);
+            if(isOpen) setTimeout(() => input.focus(), 300);
+        }
+
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleSend();
+        });
+
+        async function handleSend() {
+            const text = input.value.trim();
+            if (!text) return;
+
+            addMessage(text, 'user');
+            input.value = '';
+            
+            // Show Loader
+            const loaderId = 'load-' + Date.now();
+            const loaderDiv = document.createElement('div');
+            loaderDiv.className = 'msg-wrapper bot';
+            loaderDiv.id = loaderId;
+            loaderDiv.innerHTML = `
+                <div class="msg-bubble">
+                    <div class="typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+                </div>`;
+            messages.appendChild(loaderDiv);
+            messages.scrollTop = messages.scrollHeight;
+
+            try {
+                const req = await fetch(API_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message: text })
+                });
+                const res = await req.json();
+                
+                document.getElementById(loaderId).remove();
+                
+                const reply = res.response || res.message || res.reply || "Connection successful, but empty reply.";
+                addMessage(reply, 'bot');
+
+            } catch (err) {
+                document.getElementById(loaderId).remove();
+                addMessage("Error connecting to server.", 'bot');
+            }
+        }
+
+        function addMessage(text, sender) {
+            const div = document.createElement('div');
+            div.className = `msg-wrapper ${sender}`;
+            
+            let html = `<div class="msg-bubble">${text}</div>`;
+            
+            // ADD COPY BUTTON FOR BOT ONLY
+            if (sender === 'bot') {
+                html += `
+                <div class="msg-actions">
+                    <button class="copy-btn" onclick="copyText(this)">
+                        <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+                        <span>Copy</span>
+                    </button>
+                </div>`;
+            }
+
+            div.innerHTML = html;
+            messages.appendChild(div);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function copyText(btn) {
+            const wrapper = btn.closest('.msg-wrapper');
+            const text = wrapper.querySelector('.msg-bubble').innerText;
+
+            navigator.clipboard.writeText(text).then(() => {
+                // Morph Button Style
+                const originalContent = btn.innerHTML;
+                
+                btn.classList.add('copied');
+                // Change Icon to Checkmark & Text to Copied
+                btn.innerHTML = `
+                    <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                    <span>Copied</span>
+                `;
+
+                setTimeout(() => {
+                    btn.classList.remove('copied');
+                    btn.innerHTML = originalContent;
+                }, 2000);
+            });
+        }
+    </script>
